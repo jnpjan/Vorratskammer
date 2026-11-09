@@ -487,7 +487,7 @@ function openEditor(id){
   $("fName").value = it.name || "";
   $("fMenge").value = id ? fmt(mengeOf(it)).replace(/\./g,"") : "1";
   fillSelect($("fEinheit"), EINHEITEN, it.einheit || "Stück");
-  fillSelect($("fOrt"), ORTE, it.ort || (filterOrt!=="Alle" ? filterOrt : "Vorratsschrank"));
+  fillSelect($("fOrt"), ORTE, it.ort || (filterOrt!=="Alle" ? filterOrt : ORTE[0]));
   $("fMhd").value = it.mhd || "";
   $("fMin").value = it.minMenge ? fmt(it.minMenge).replace(/\./g,"") : "";
   $("edDelete").hidden = !id;
