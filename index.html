@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2f5d46">
+<meta name="apple-mobile-web-app-title" content="Vorrat">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232f5d46'/%3E%3Crect x='16' y='14' width='32' height='38' rx='5' fill='%23f6f2ea'/%3E%3Crect x='16' y='24' width='32' height='4' fill='%232f5d46'/%3E%3Crect x='16' y='38' width='32' height='4' fill='%232f5d46'/%3E%3C/svg%3E">
+<title>Vorratskammer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f2ea; --card:#fffdf8; --ink:#23201b; --muted:#7a7266; --line:#e6dfd2;
+    --accent:#2f5d46; --accent-ink:#fff; --accent-soft:#e3ece5;
+    --warn:#a8691a; --warn-soft:#fbf0dc; --bad:#b4442f; --bad-soft:#f8e3de;
+    --shadow:0 1px 2px rgba(40,30,10,.06),0 4px 14px rgba(40,30,10,.05);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#171614; --card:#211f1c; --ink:#f1ece3; --muted:#a39a8c; --line:#34302a;
+      --accent:#7fb896; --accent-ink:#13201a; --accent-soft:#23332a;
+      --warn:#e3b062; --warn-soft:#3a2f1d; --bad:#e88a75; --bad-soft:#3b231e;
+      --shadow:0 1px 2px rgba(0,0,0,.3);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif;font-size:16px;-webkit-text-size-adjust:100%}
+  button,input,select{font:inherit;color:inherit}
+  .wrap{max-width:640px;margin:0 auto;padding:18px 16px 110px}
+  header h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:30px;margin:4px 0 2px;letter-spacing:-.01em}
+  header p{margin:0;color:var(--muted);font-size:14px}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0 14px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;text-align:left;cursor:pointer;box-shadow:var(--shadow)}
+  .stat b{display:block;font-size:22px;line-height:1.1}
+  .stat span{font-size:12.5px;color:var(--muted)}
+  .stat.warn b{color:var(--warn)} .stat.bad b{color:var(--bad)}
+  .stat.on{outline:2px solid var(--accent);outline-offset:-2px}
+
+  .tabs{display:flex;background:var(--line);border-radius:12px;padding:3px;gap:3px;margin-bottom:14px}
+  .tabs button{flex:1;border:0;background:transparent;padding:9px;border-radius:10px;font-weight:600;color:var(--muted);cursor:pointer}
+  .tabs button.on{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+  .tabs .count{font-weight:500;opacity:.7}
+
+  .note{border-radius:12px;padding:10px 12px;font-size:14px;margin-bottom:12px;display:none}
+  .note.show{display:block}
+  .note.warn{background:var(--warn-soft);color:var(--warn)}
+  .note.bad{background:var(--bad-soft);color:var(--bad)}
+
+  .toolbar{display:flex;gap:8px;margin-bottom:10px}
+  .search{flex:1;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px;min-width:0}
+  .sort{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px;max-width:42%}
+  .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:14px;cursor:pointer;white-space:nowrap}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+
+  .list{display:flex;flex-direction:column;gap:8px}
+  .item{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 10px 11px 14px;box-shadow:var(--shadow)}
+  .item.empty{opacity:.62}
+  .main{flex:1;min-width:0;cursor:pointer;background:none;border:0;padding:0;text-align:left}
+  .name{font-weight:600;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .meta{font-size:13px;color:var(--muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+  .badge{font-size:12px;font-weight:600;border-radius:6px;padding:1px 6px}
+  .badge.warn{background:var(--warn-soft);color:var(--warn)}
+  .badge.bad{background:var(--bad-soft);color:var(--bad)}
+  .badge.low{background:var(--accent-soft);color:var(--accent)}
+  .stepper{display:flex;align-items:center;gap:2px;flex:none}
+  .stepper button{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-size:20px;line-height:1;cursor:pointer}
+  .stepper button:disabled{opacity:.4;cursor:default}
+  .qty{min-width:58px;text-align:center;font-weight:700;font-size:15px;line-height:1.1}
+  .qty small{display:block;font-weight:500;font-size:11.5px;color:var(--muted)}
+
+  .section-title{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:18px 2px 8px}
+  .addrow{display:flex;gap:8px;margin-bottom:12px}
+  .addrow input{flex:1;min-width:0;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:11px 12px}
+  .btn{border:0;border-radius:12px;padding:11px 16px;font-weight:600;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+  .btn.danger{background:var(--bad-soft);color:var(--bad)}
+  .btn:disabled{opacity:.45;cursor:default}
+  .btn.small{padding:7px 11px;font-size:14px;border-radius:10px}
+
+  .shop{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .shop.done .sname{text-decoration:line-through;color:var(--muted)}
+  .check{width:24px;height:24px;border-radius:7px;border:2px solid var(--line);background:transparent;flex:none;cursor:pointer;display:grid;place-items:center;padding:0}
+  .shop.done .check{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .sname{flex:1;min-width:0;font-weight:500}
+  .x{border:0;background:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0 4px}
+
+  .emptystate{text-align:center;color:var(--muted);padding:34px 16px;font-size:15px;line-height:1.5}
+
+  .fab{position:fixed;right:max(18px,calc(50% - 302px));bottom:22px;width:58px;height:58px;border-radius:18px;border:0;background:var(--accent);color:var(--accent-ink);font-size:30px;box-shadow:0 6px 20px rgba(0,0,0,.18);cursor:pointer}
+  .fab:disabled{opacity:.4}
+
+  .overlay{position:fixed;inset:0;background:rgba(20,15,5,.42);display:none;align-items:flex-end;justify-content:center;z-index:10}
+  .overlay.show{display:flex}
+  .sheet{background:var(--card);width:100%;max-width:640px;border-radius:20px 20px 0 0;padding:20px 18px 24px;max-height:92vh;overflow:auto}
+  @media (min-width:700px){.overlay{align-items:center}.sheet{border-radius:20px}}
+  .sheet h2{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:22px;margin:0 0 14px}
+  .field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+  .field label{font-size:13px;font-weight:600;color:var(--muted)}
+  .field input,.field select{border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:11px 12px;width:100%}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:-2px}
+  .actions{display:flex;gap:8px;margin-top:16px}
+  .actions .spacer{flex:1}
+  .err{color:var(--bad);font-size:13.5px;min-height:18px}
+  .setupcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:18px;box-shadow:var(--shadow)}
+  .setupcard h2{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:22px;margin:0 0 8px}
+  .setupcard p{margin:0 0 12px;line-height:1.45;font-size:15px}
+  .setupcard input,#shareLink{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:11px 12px;margin-bottom:6px;font-size:14px}
+  .foot{margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+  #shareBox{width:100%}
+  .linkbtn{border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Vorratskammer</h1>
+    <p>Was ist da, was läuft ab, was muss nachgekauft werden.</p>
+  </header>
+
+  <section id="setup" hidden>
+    <div class="setupcard">
+      <h2>Einmal verbinden</h2>
+      <p>Füge hier die <b>Web-App-URL</b> aus Google Apps Script ein. Sie endet auf <b>/exec</b>.</p>
+      <form id="setupForm">
+        <input id="setupInput" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+        <div class="err" id="setupErr"></div>
+        <button class="btn" type="submit" id="setupBtn">Verbinden</button>
+      </form>
+      <p class="hint" style="margin-top:12px">Bekommst du einen Link von jemandem aus dem Haushalt, öffne einfach den. Dann ist die App schon verbunden.</p>
+    </div>
+  </section>
+
+  <div id="app">
+
+  <div class="stats" id="stats"></div>
+
+  <div class="tabs" role="tablist">
+    <button id="tab-vorrat" data-tab="vorrat">Vorrat <span class="count" id="c-vorrat"></span></button>
+    <button id="tab-einkauf" data-tab="einkauf">Einkaufsliste <span class="count" id="c-einkauf"></span></button>
+  </div>
+
+  <div class="note warn" id="loadNote"></div>
+  <div class="note bad" id="errNote"></div>
+
+  <section id="view-vorrat">
+    <div class="toolbar">
+      <input class="search" id="search" type="search" placeholder="Suchen…" autocomplete="off">
+      <select class="sort" id="sort" aria-label="Sortierung">
+        <option value="mhd">Nach MHD</option>
+        <option value="name">Nach Name</option>
+        <option value="menge">Wenig zuerst</option>
+      </select>
+    </div>
+    <div class="chips" id="orte"></div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <section id="view-einkauf" hidden>
+    <form class="addrow" id="shopForm">
+      <input id="shopInput" placeholder="z. B. Milch, 2 Packungen" autocomplete="off">
+      <button class="btn" type="submit" id="shopAdd">Hinzufügen</button>
+    </form>
+    <div class="list" id="shopList"></div>
+    <div id="suggestWrap"></div>
+  </section>
+
+  <footer class="foot">
+    <button class="btn ghost small" id="shareBtn">Link für den Haushalt kopieren</button>
+    <div id="shareBox" hidden>
+      <p class="hint">Diesen Link an die anderen schicken. Wer ihn öffnet, ist direkt verbunden.</p>
+      <input id="shareLink" readonly>
+    </div>
+    <button class="linkbtn" id="resetBtn">Verbindung ändern</button>
+  </footer>
+  </div>
+</div>
+
+<button class="fab" id="fab" aria-label="Artikel hinzufügen">+</button>
+
+<div class="overlay" id="overlay">
+  <form class="sheet" id="editor" autocomplete="off">
+    <h2 id="edTitle">Neuer Artikel</h2>
+    <div class="field">
+      <label for="fName">Name</label>
+      <input id="fName" required placeholder="z. B. Spaghetti">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="fMenge">Menge</label>
+        <input id="fMenge" inputmode="decimal" placeholder="1">
+      </div>
+      <div class="field">
+        <label for="fEinheit">Einheit</label>
+        <select id="fEinheit"></select>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="fOrt">Lagerort</label>
+        <select id="fOrt"></select>
+      </div>
+      <div class="field">
+        <label for="fMhd">MHD</label>
+        <input id="fMhd" type="date">
+      </div>
+    </div>
+    <div class="field">
+      <label for="fMin">Mindestmenge</label>
+      <input id="fMin" inputmode="decimal" placeholder="optional">
+      <div class="hint">Fällt der Bestand darunter, landet der Artikel bei den Nachkauf-Vorschlägen.</div>
+    </div>
+    <div class="err" id="edErr"></div>
+    <div class="actions">
+      <button type="button" class="btn danger" id="edDelete" hidden>Löschen</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" id="edCancel">Abbrechen</button>
+      <button type="submit" class="btn" id="edSave">Speichern</button>
+    </div>
+  </form>
+</div>
+
+<script>
+const ORTE = ["Kühlschrank","Gefrierschrank","Vorratsschrank","Keller","Sonstiges"];
+const EINHEITEN = ["Stück","Packung","Dose","Glas","Flasche","g","kg","ml","l"];
+const STEP = {g:100, ml:100, kg:0.5, l:0.5};
+const SOON_DAYS = 3;
+const POLL_MS = 20000;
+
+let loaded = false;
+let items = [], shop = [];
+let tab = "vorrat", filterOrt = "Alle", quick = null, search = "", sortBy = "mhd";
+const pendingMenge = {};
+let editingId = null, deleteArmed = false;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = v => { const n = parseFloat(String(v ?? "").replace(",", ".")); return isFinite(n) ? n : null; };
+const round = n => Math.round(n * 100) / 100;
+const fmt = n => (+n || 0).toLocaleString("de-DE", {maximumFractionDigits: 2});
+const uid = () => { try { if (crypto.randomUUID) return crypto.randomUUID(); } catch(_){} return Date.now().toString(36) + Math.random().toString(36).slice(2, 10); };
+
+/* ---------- Server-Aufrufe (eine Warteschlange, damit die Reihenfolge stimmt) ---------- */
+/* Verbindung: Die Web-App-ID kommt aus dem Link (#ID) oder aus dem Setup und wird im Browser gemerkt. */
+const LS_KEY = "vorratskammer-api";
+let apiId = "";
+function parseId(s){
+  s = String(s || "").trim();
+  const m = s.match(/\/macros\/s\/([A-Za-z0-9_-]{20,})\/(exec|dev)/);
+  if(m) return m[1];
+  if(/^[A-Za-z0-9_-]{20,}$/.test(s)) return s;
+  return "";
+}
+function lsGet(){ try { return localStorage.getItem(LS_KEY) || ""; } catch(_) { return ""; } }
+function lsSet(v){ try { v ? localStorage.setItem(LS_KEY, v) : localStorage.removeItem(LS_KEY); } catch(_) {} }
+const apiUrl = () => `https://script.google.com/macros/s/${apiId}/exec`;
+const shareUrl = () => location.href.split("#")[0] + "#" + apiId;
+
+/* Ohne Cookies schicken, damit mehrere angemeldete Google-Konten nicht stören. */
+async function call(fn, ...args){
+  let res;
+  try {
+    res = await fetch(apiUrl(), {method:"POST", body:JSON.stringify({fn, args}), credentials:"omit", redirect:"follow"});
+  } catch(_) { throw new Error("Keine Verbindung zu Google"); }
+  if(!res.ok) throw new Error("Google antwortet mit Fehler " + res.status);
+  let j;
+  try { j = await res.json(); } catch(_) { throw new Error("Unerwartete Antwort. Ist bei der Bereitstellung Zugriff auf „Jeder“ gestellt?"); }
+  if(!j || !j.ok) throw new Error((j && j.error) || "Unbekannter Fehler");
+  return j.data;
+}
+let chain = Promise.resolve(), busy = 0;
+function op(fn, ...args){
+  busy++;
+  const p = chain.then(() => call(fn, ...args)).then(state => {
+    busy--;
+    if(busy === 0 && !Object.keys(pendingMenge).length) applyState(state);
+    return state;
+  }, err => {
+    busy--;
+    showErr("Speichern hat nicht geklappt" + (err && err.message ? ": " + err.message : ".") + " Die Liste wird neu geladen.");
+    refresh();
+    throw err;
+  });
+  chain = p.catch(() => {});
+  return p;
+}
+function applyState(state){
+  if(!state) return;
+  items = state.vorrat || [];
+  shop = state.einkauf || [];
+  loaded = true;
+  render();
+}
+function refresh(){
+  if(!apiId || !$("setup").hidden) return;
+  if(busy || Object.keys(pendingMenge).length) return;
+  call("getAll").then(s => {
+    if(busy || Object.keys(pendingMenge).length) return;
+    $("loadNote").classList.remove("show");
+    applyState(s);
+  }, err => {
+    const n = $("loadNote");
+    n.textContent = loaded
+      ? "Die Liste ist eventuell nicht aktuell. Die Verbindung hakt gerade."
+      : "Die Daten konnten nicht geladen werden" + (err && err.message ? ": " + err.message : ".");
+    n.classList.add("show");
+    if(!loaded){ loaded = true; render(); }
+  });
+}
+function showErr(t){
+  const n = $("errNote"); n.textContent = t; n.classList.add("show");
+  clearTimeout(showErr.t); showErr.t = setTimeout(() => n.classList.remove("show"), 8000);
+}
+
+/* ---------- Datum ---------- */
+function daysLeft(mhd){
+  if(!mhd) return null;
+  const [y,m,d] = String(mhd).split("-").map(Number);
+  if(!y || !m || !d) return null;
+  const t = new Date(); t.setHours(0,0,0,0);
+  return Math.round((new Date(y, m-1, d) - t) / 86400000);
+}
+function mhdLabel(mhd){
+  const dl = daysLeft(mhd);
+  if(dl === null) return null;
+  const [y,m,d] = String(mhd).split("-");
+  const date = `${d}.${m}.${y.slice(2)}`;
+  if(dl < 0) return {cls:"bad", text: dl === -1 ? "seit gestern abgelaufen" : `seit ${-dl} Tagen abgelaufen`, date};
+  if(dl === 0) return {cls:"bad", text:"läuft heute ab", date};
+  if(dl <= SOON_DAYS) return {cls:"warn", text: dl === 1 ? "läuft morgen ab" : `noch ${dl} Tage`, date};
+  return {cls:"", text:"", date};
+}
+
+/* ---------- Ableitungen ---------- */
+const mengeOf = it => pendingMenge[it.id] ? pendingMenge[it.id].value : (+it.menge || 0);
+const isLow = it => { const m = mengeOf(it), min = +it.minMenge || 0; return m <= 0 || (min > 0 && m < min); };
+const isSoon = it => { const dl = daysLeft(it.mhd); return dl !== null && dl <= SOON_DAYS && mengeOf(it) > 0; };
+const isExpired = it => { const dl = daysLeft(it.mhd); return dl !== null && dl < 0 && mengeOf(it) > 0; };
+
+/* ---------- Mengen-Stepper ---------- */
+function bump(id, dir){
+  const it = items.find(x => x.id === id);
+  if(!it) return;
+  const step = STEP[it.einheit] || 1;
+  const cur = mengeOf(it);
+  const nv = Math.max(0, round(cur + dir*step));
+  if(nv === cur) return;
+  if(pendingMenge[id]) clearTimeout(pendingMenge[id].timer);
+  pendingMenge[id] = {value:nv, timer:setTimeout(() => flushMenge(id), 800)};
+  render();
+}
+function flushMenge(id){
+  const p = pendingMenge[id]; if(!p) return;
+  const v = p.value;
+  const it = items.find(x => x.id === id);
+  if(it) it.menge = v;
+  delete pendingMenge[id];
+  op("setMenge", id, v).catch(() => {});
+}
+
+/* ---------- Render ---------- */
+function render(){
+  const expired = items.filter(isExpired).length;
+  const soon = items.filter(it => isSoon(it) && !isExpired(it)).length;
+  const low = items.filter(isLow).length;
+  $("stats").innerHTML = `
+    <button class="stat ${quick==="soon"?"on":""} ${expired?"bad":soon?"warn":""}" data-quick="soon">
+      <b>${expired + soon}</b><span>${expired ? `davon ${expired} abgelaufen` : "laufen bald ab"}</span></button>
+    <button class="stat ${quick==="low"?"on":""}" data-quick="low"><b>${low}</b><span>fast leer</span></button>
+    <button class="stat" data-quick="all"><b>${items.filter(i=>mengeOf(i)>0).length}</b><span>Artikel da</span></button>`;
+
+  $("tab-vorrat").classList.toggle("on", tab==="vorrat");
+  $("tab-einkauf").classList.toggle("on", tab==="einkauf");
+  $("view-vorrat").hidden = tab!=="vorrat";
+  $("view-einkauf").hidden = tab!=="einkauf";
+  $("fab").hidden = tab!=="vorrat" || !$("setup").hidden;
+  const openShop = shop.filter(s => !s.erledigt).length;
+  $("c-einkauf").textContent = openShop ? `(${openShop})` : "";
+  $("c-vorrat").textContent = items.length ? `(${items.length})` : "";
+
+  tab === "vorrat" ? renderVorrat() : renderShop();
+}
+
+function renderVorrat(){
+  const orte = [...new Set([...ORTE, ...items.map(i => i.ort).filter(Boolean)])];
+  const counts = {}; items.forEach(i => counts[i.ort] = (counts[i.ort]||0)+1);
+  $("orte").innerHTML = ["Alle", ...orte.filter(o => counts[o])].map(o =>
+    `<button class="chip ${filterOrt===o?"on":""}" data-ort="${esc(o)}">${esc(o)}${o!=="Alle"?` · ${counts[o]}`:""}</button>`).join("");
+
+  if(!loaded){ $("list").innerHTML = `<div class="emptystate">Lädt…</div>`; return; }
+
+  const q = search.trim().toLowerCase();
+  let list = items.filter(it =>
+    (filterOrt==="Alle" || it.ort===filterOrt) &&
+    (!q || String(it.name||"").toLowerCase().includes(q)) &&
+    (quick!=="soon" || isSoon(it)) &&
+    (quick!=="low" || isLow(it)));
+
+  list.sort((a,b) => {
+    const ea = mengeOf(a) <= 0, eb = mengeOf(b) <= 0;
+    if(sortBy !== "menge" && ea !== eb) return ea ? 1 : -1;
+    if(sortBy === "mhd"){
+      const da = daysLeft(a.mhd), dbb = daysLeft(b.mhd);
+      if(da !== dbb){ if(da === null) return 1; if(dbb === null) return -1; return da - dbb; }
+    }
+    if(sortBy === "menge"){
+      const ra = (+a.minMenge>0) ? mengeOf(a)/(+a.minMenge) : mengeOf(a);
+      const rb = (+b.minMenge>0) ? mengeOf(b)/(+b.minMenge) : mengeOf(b);
+      if(ra !== rb) return ra - rb;
+    }
+    return String(a.name||"").localeCompare(String(b.name||""), "de");
+  });
+
+  if(!list.length){
+    $("list").innerHTML = `<div class="emptystate">${items.length
+      ? "Nichts gefunden für diesen Filter."
+      : "Noch nichts im Vorrat.<br>Tippe unten rechts auf <b>+</b>, um den ersten Artikel anzulegen."}</div>`;
+    return;
+  }
+
+  $("list").innerHTML = list.map(it => {
+    const m = mengeOf(it), lbl = mhdLabel(it.mhd);
+    const badges = [];
+    if(m <= 0) badges.push(`<span class="badge low">leer</span>`);
+    else if(isLow(it)) badges.push(`<span class="badge low">fast leer</span>`);
+    if(lbl && lbl.text && m > 0) badges.push(`<span class="badge ${lbl.cls}">${esc(lbl.text)}</span>`);
+    const metaBits = [esc(it.ort || "Sonstiges")];
+    if(lbl) metaBits.push("MHD " + esc(lbl.date));
+    return `<div class="item ${m<=0?"empty":""}">
+      <button class="main" data-edit="${esc(it.id)}">
+        <div class="name">${esc(it.name || "Ohne Namen")}</div>
+        <div class="meta"><span>${metaBits.join(" · ")}</span>${badges.join("")}</div>
+      </button>
+      <div class="stepper">
+        <button data-bump="-1" data-id="${esc(it.id)}" ${m<=0?"disabled":""} aria-label="weniger">−</button>
+        <div class="qty">${fmt(m)}<small>${esc(it.einheit || "Stück")}</small></div>
+        <button data-bump="1" data-id="${esc(it.id)}" aria-label="mehr">+</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function suggestions(){
+  const open = shop.filter(s => !s.erledigt);
+  const onList = new Set(open.map(s => s.vorratId).filter(Boolean));
+  const names = new Set(open.map(s => String(s.name||"").toLowerCase()));
+  return items.filter(it => isLow(it) && !onList.has(it.id) && !names.has(String(it.name||"").toLowerCase()));
+}
+
+function renderShop(){
+  if(!loaded){ $("shopList").innerHTML = `<div class="emptystate">Lädt…</div>`; $("suggestWrap").innerHTML = ""; return; }
+  const sorted = [...shop].sort((a,b) => (a.erledigt?1:0)-(b.erledigt?1:0) || (a.erstellt||0)-(b.erstellt||0));
+  const done = shop.filter(s => s.erledigt).length;
+  $("shopList").innerHTML = sorted.length ? sorted.map(s => `
+    <div class="shop ${s.erledigt?"done":""}">
+      <button class="check" data-toggle="${esc(s.id)}" aria-label="abhaken">${s.erledigt?"✓":""}</button>
+      <div class="sname">${esc(s.name)}</div>
+      <button class="x" data-delshop="${esc(s.id)}" aria-label="entfernen">×</button>
+    </div>`).join("") + (done ? `<div style="text-align:right;margin-top:4px"><button class="btn ghost small" id="clearDone">Erledigte entfernen (${done})</button></div>` : "")
+    : `<div class="emptystate">Die Einkaufsliste ist leer.</div>`;
+
+  const sugg = suggestions();
+  $("suggestWrap").innerHTML = sugg.length ? `
+    <div class="section-title">Nachkaufen? Fast leer im Vorrat</div>
+    <div class="list">${sugg.map(it => `
+      <div class="shop">
+        <div class="sname">${esc(it.name)} <span style="color:var(--muted);font-size:13px">· noch ${fmt(mengeOf(it))} ${esc(it.einheit||"")}</span></div>
+        <button class="btn small" data-suggest="${esc(it.id)}">+ Liste</button>
+      </div>`).join("")}</div>
+    ${sugg.length>1 ? `<div style="text-align:right;margin-top:8px"><button class="btn ghost small" id="addAllSugg">Alle hinzufügen</button></div>`:""}` : "";
+}
+
+/* ---------- Editor ---------- */
+function fillSelect(sel, opts, val){
+  const all = val && !opts.includes(val) ? [...opts, val] : opts;
+  sel.innerHTML = all.map(o => `<option ${o===val?"selected":""}>${esc(o)}</option>`).join("");
+}
+function openEditor(id){
+  if(id && !items.find(i => i.id === id)) return;
+  editingId = id || null; deleteArmed = false;
+  const it = id ? items.find(i => i.id === id) : {};
+  $("edTitle").textContent = id ? "Artikel bearbeiten" : "Neuer Artikel";
+  $("fName").value = it.name || "";
+  $("fMenge").value = id ? fmt(mengeOf(it)).replace(/\./g,"") : "1";
+  fillSelect($("fEinheit"), EINHEITEN, it.einheit || "Stück");
+  fillSelect($("fOrt"), ORTE, it.ort || (filterOrt!=="Alle" ? filterOrt : "Vorratsschrank"));
+  $("fMhd").value = it.mhd || "";
+  $("fMin").value = it.minMenge ? fmt(it.minMenge).replace(/\./g,"") : "";
+  $("edDelete").hidden = !id;
+  $("edDelete").textContent = "Löschen";
+  $("edErr").textContent = "";
+  $("overlay").classList.add("show");
+  if(!id) setTimeout(() => $("fName").focus(), 50);
+}
+function closeEditor(){ $("overlay").classList.remove("show"); editingId = null; }
+
+$("editor").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("fName").value.trim();
+  if(!name){ $("edErr").textContent = "Bitte einen Namen eingeben."; return; }
+  const menge = num($("fMenge").value);
+  if(menge === null || menge < 0){ $("edErr").textContent = "Die Menge muss eine Zahl ab 0 sein."; return; }
+  const minRaw = $("fMin").value.trim();
+  const minMenge = minRaw ? num(minRaw) : 0;
+  if(minMenge === null || minMenge < 0){ $("edErr").textContent = "Die Mindestmenge muss eine Zahl ab 0 sein."; return; }
+  const id = editingId || uid();
+  if(pendingMenge[id]){ clearTimeout(pendingMenge[id].timer); delete pendingMenge[id]; }
+  const data = {id, name, menge:round(menge), einheit:$("fEinheit").value, ort:$("fOrt").value, mhd:$("fMhd").value || "", minMenge:round(minMenge)};
+  const i = items.findIndex(x => x.id === id);
+  if(i >= 0) items[i] = {...items[i], ...data}; else items.push(data);
+  closeEditor();
+  render();
+  op("saveItem", data).catch(() => {});
+});
+$("edCancel").onclick = closeEditor;
+$("overlay").addEventListener("click", e => { if(e.target === $("overlay")) closeEditor(); });
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeEditor(); });
+$("edDelete").onclick = () => {
+  if(!editingId) return;
+  if(!deleteArmed){ deleteArmed = true; $("edDelete").textContent = "Wirklich löschen?"; return; }
+  const id = editingId;
+  if(pendingMenge[id]){ clearTimeout(pendingMenge[id].timer); delete pendingMenge[id]; }
+  items = items.filter(x => x.id !== id);
+  closeEditor();
+  render();
+  op("deleteItem", id).catch(() => {});
+};
+
+/* ---------- Einkaufsliste ---------- */
+function addShop(list){
+  list = list.filter(s => s.name);
+  if(!list.length) return;
+  list.forEach(s => { s.id = uid(); shop.push({...s, erledigt:false, erstellt:Date.now()}); });
+  render();
+  op("addShop", list).catch(() => {});
+}
+$("shopForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = $("shopInput").value.trim();
+  if(!v) return;
+  $("shopInput").value = "";
+  addShop([{name:v}]);
+});
+
+/* ---------- Events ---------- */
+document.addEventListener("click", e => {
+  const t = e.target.closest("button");
+  if(!t) return;
+  if(t.dataset.tab){ tab = t.dataset.tab; render(); return; }
+  if(t.dataset.quick){
+    const q = t.dataset.quick;
+    quick = (q === "all" || quick === q) ? null : q;
+    if(q === "all") filterOrt = "Alle";
+    if(quick === "soon"){ sortBy = "mhd"; $("sort").value = "mhd"; }
+    tab = "vorrat";
+    render(); return;
+  }
+  if(t.dataset.ort){ filterOrt = t.dataset.ort; render(); return; }
+  if(t.dataset.bump){ bump(t.dataset.id, +t.dataset.bump); return; }
+  if(t.dataset.edit){ openEditor(t.dataset.edit); return; }
+  if(t.dataset.toggle){
+    const s = shop.find(x => x.id === t.dataset.toggle); if(!s) return;
+    s.erledigt = !s.erledigt; render();
+    op("toggleShop", s.id, s.erledigt).catch(() => {});
+    return;
+  }
+  if(t.dataset.delshop){
+    const id = t.dataset.delshop;
+    shop = shop.filter(x => x.id !== id); render();
+    op("deleteShop", id).catch(() => {});
+    return;
+  }
+  if(t.dataset.suggest){
+    const it = items.find(i => i.id === t.dataset.suggest);
+    if(it) addShop([{name:it.name, vorratId:it.id}]);
+    return;
+  }
+  if(t.id === "addAllSugg"){
+    addShop(suggestions().map(it => ({name:it.name, vorratId:it.id})));
+    return;
+  }
+  if(t.id === "clearDone"){
+    shop = shop.filter(x => !x.erledigt); render();
+    op("clearDone").catch(() => {});
+    return;
+  }
+});
+$("fab").onclick = () => openEditor(null);
+$("search").addEventListener("input", e => { search = e.target.value; render(); });
+$("sort").addEventListener("change", e => { sortBy = e.target.value; render(); });
+
+/* ---------- Start + regelmäßiges Aktualisieren ---------- */
+function showSetup(msg){
+  $("setup").hidden = false; $("app").hidden = true; $("fab").hidden = true;
+  $("setupErr").textContent = msg || "";
+}
+async function connect(id, fromSetup){
+  apiId = id;
+  $("setupBtn").disabled = true;
+  try {
+    const s = await call("getAll");
+    lsSet(id);
+    try { history.replaceState(null, "", shareUrl()); } catch(_) {}
+    $("setup").hidden = true; $("app").hidden = false;
+    $("loadNote").classList.remove("show");
+    applyState(s);
+  } catch(err) {
+    if(fromSetup || !lsGet()) showSetup("Verbinden hat nicht geklappt: " + err.message);
+    else {
+      $("setup").hidden = true; $("app").hidden = false;
+      const n = $("loadNote"); n.textContent = "Die Daten konnten nicht geladen werden: " + err.message; n.classList.add("show");
+      loaded = true; render();
+    }
+  } finally { $("setupBtn").disabled = false; }
+}
+$("setupForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const id = parseId($("setupInput").value);
+  if(!id){ $("setupErr").textContent = "Das sieht nicht nach einer Web-App-URL aus. Sie enthält /macros/s/ und endet auf /exec."; return; }
+  $("setupErr").textContent = "Verbinde…";
+  connect(id, true);
+});
+$("shareBtn").onclick = async () => {
+  const link = shareUrl();
+  $("shareBox").hidden = false;
+  $("shareLink").value = link;
+  try { await navigator.clipboard.writeText(link); $("shareBtn").textContent = "Link kopiert ✓"; }
+  catch(_) { $("shareLink").select(); $("shareBtn").textContent = "Link unten markieren und kopieren"; }
+};
+$("resetBtn").onclick = () => { lsSet(""); apiId = ""; items = []; shop = []; loaded = false; $("setupInput").value = ""; showSetup(""); };
+
+render();
+const startId = parseId(decodeURIComponent(location.hash.slice(1))) || lsGet();
+if(startId){ $("setup").hidden = true; connect(startId, false); }
+else showSetup("");
+setInterval(() => { if(!document.hidden && !$("overlay").classList.contains("show")) refresh(); }, POLL_MS);
+document.addEventListener("visibilitychange", () => { if(!document.hidden) refresh(); });
+</script>
+</body>
+</html>
